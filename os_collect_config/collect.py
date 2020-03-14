@@ -37,9 +37,9 @@ from os_collect_config import local
 from os_collect_config import request
 from os_collect_config import version
 from os_collect_config import zaqar
+from os_collect_config import gcore
 
-DEFAULT_COLLECTORS = ['heat_local', 'ec2', 'cfn', 'heat', 'request', 'local',
-                      'zaqar']
+DEFAULT_COLLECTORS = ['heat_local', 'ec2', 'cfn', 'heat', 'gcore', 'request', 'local', 'zaqar']
 
 opts = [
     cfg.StrOpt('command', short='c',
@@ -109,6 +109,7 @@ logger = log.getLogger('os-collect-config')
 COLLECTORS = {ec2.name: ec2,
               cfn.name: cfn,
               heat.name: heat,
+              gcore.name: gcore,
               heat_local.name: heat_local,
               local.name: local,
               request.name: request,
@@ -131,6 +132,9 @@ def setup_conf():
     heat_group = cfg.OptGroup(name='heat',
                               title='Heat Metadata options')
 
+    gcore_group = cfg.OptGroup(name='gcore',
+                               title='Gcore Metadata options')
+
     zaqar_group = cfg.OptGroup(name='zaqar',
                                title='Zaqar queue options')
 
@@ -145,6 +149,7 @@ def setup_conf():
     CONF.register_group(heat_local_group)
     CONF.register_group(local_group)
     CONF.register_group(heat_group)
+    CONF.register_group(gcore_group)
     CONF.register_group(request_group)
     CONF.register_group(keystone_group)
     CONF.register_group(zaqar_group)
@@ -153,6 +158,7 @@ def setup_conf():
     CONF.register_cli_opts(heat_local.opts, group='heat_local')
     CONF.register_cli_opts(local.opts, group='local')
     CONF.register_cli_opts(heat.opts, group='heat')
+    CONF.register_cli_opts(gcore.opts, group='gcore')
     CONF.register_cli_opts(request.opts, group='request')
     CONF.register_cli_opts(keystone.opts, group='keystone')
     CONF.register_cli_opts(zaqar.opts, group='zaqar')
@@ -168,7 +174,6 @@ def collect_all(collectors, store=False, collector_kwargs_map=None):
         paths_or_content = []
     else:
         paths_or_content = {}
-
     for collector in collectors:
         module = COLLECTORS[collector]
         if collector_kwargs_map and collector in collector_kwargs_map:
@@ -177,7 +182,8 @@ def collect_all(collectors, store=False, collector_kwargs_map=None):
             collector_kwargs = {}
 
         try:
-            content = module.Collector(**collector_kwargs).collect()
+            collector = module.Collector(**collector_kwargs)
+            content = collector.collect()
         except exc.SourceNotAvailable:
             logger.warn('Source [%s] Unavailable.' % collector)
             continue

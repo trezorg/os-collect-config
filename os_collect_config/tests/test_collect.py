@@ -38,6 +38,7 @@ from os_collect_config.tests import test_heat_local
 from os_collect_config.tests import test_local
 from os_collect_config.tests import test_request
 from os_collect_config.tests import test_zaqar
+from os_collect_config.tests import test_gcore
 
 
 def _setup_heat_local_metadata(test_case):
@@ -72,6 +73,7 @@ class TestCollect(testtools.TestCase):
         collector_kwargs_map = {
             'ec2': {'requests_impl': test_ec2.FakeRequests},
             'cfn': {'requests_impl': test_cfn.FakeRequests(self)},
+            'gcore': {'client': test_gcore.GcoreTestHeatResourceClient.from_conf()},
             'heat': {
                 'keystoneclient': test_heat.FakeKeystoneClient(self),
                 'heatclient': test_heat.FakeHeatClient(self),
@@ -390,12 +392,20 @@ class TestCollectAll(testtools.TestCase):
         cfg.CONF.zaqar.password = 'FEDCBA9876543210'
         cfg.CONF.zaqar.project_id = '9f6b09df-4d7f-4a33-8ec3-9924d8f46f10'
         cfg.CONF.zaqar.queue_id = '4f3f46d3-09f1-42a7-8c13-f91a5457192c'
+        cfg.CONF.gcore.api_url = 'http://192.0.2.1:5000'
+        cfg.CONF.gcore.access_token = '0123456789ABCDEF'
+        cfg.CONF.gcore.refresh_token = 'FEDCBA9876543210'
+        cfg.CONF.gcore.project_id = 1
+        cfg.CONF.gcore.region_id = 1
+        cfg.CONF.gcore.stack_id = 'a/c482680f-7238-403d-8f76-36acf0c8e0aa'
+        cfg.CONF.gcore.resource_name = 'server'
 
     def _call_collect_all(self, store, collector_kwargs_map=None,
                           collectors=None):
         if collector_kwargs_map is None:
             collector_kwargs_map = {
                 'ec2': {'requests_impl': test_ec2.FakeRequests},
+                'gcore': {'client': test_gcore.GcoreTestHeatResourceClient.from_conf()},
                 'cfn': {'requests_impl': test_cfn.FakeRequests(self)},
                 'heat': {
                     'keystoneclient': test_heat.FakeKeystoneClient(self),
@@ -423,7 +433,7 @@ class TestCollectAll(testtools.TestCase):
         (changed_keys, paths) = self._call_collect_all(
             store=True, collector_kwargs_map=collector_kwargs_map)
         if expected_changed is None:
-            expected_changed = set(['heat_local', 'cfn', 'ec2',
+            expected_changed = set(['heat_local', 'cfn', 'ec2', 'gcore',
                                     'heat', 'local', 'request', 'zaqar'])
         self.assertEqual(expected_changed, changed_keys)
         self.assertThat(paths, matchers.IsInstance(list))
@@ -437,6 +447,7 @@ class TestCollectAll(testtools.TestCase):
     def test_collect_all_store_softwareconfig(self):
         soft_config_map = {
             'ec2': {'requests_impl': test_ec2.FakeRequests},
+            'gcore': {'client': test_gcore.GcoreTestHeatResourceClient.from_conf()},
             'cfn': {
                 'requests_impl': test_cfn.FakeRequestsSoftwareConfig(self)},
             'heat': {
@@ -452,7 +463,7 @@ class TestCollectAll(testtools.TestCase):
             },
         }
         expected_changed = set((
-            'heat_local', 'ec2', 'cfn', 'heat', 'local', 'request',
+            'heat_local', 'ec2', 'cfn', 'gcore', 'heat', 'local', 'request',
             'dep-name1', 'dep-name2', 'dep-name3', 'zaqar'))
         self._test_collect_all_store(collector_kwargs_map=soft_config_map,
                                      expected_changed=expected_changed)
@@ -482,6 +493,7 @@ class TestCollectAll(testtools.TestCase):
     def test_collect_all_no_change_softwareconfig(self):
         soft_config_map = {
             'ec2': {'requests_impl': test_ec2.FakeRequests},
+            'gcore': {'client': test_gcore.GcoreTestHeatResourceClient.from_conf()},
             'cfn': {
                 'requests_impl': test_cfn.FakeRequestsSoftwareConfig(self)},
             'heat': {

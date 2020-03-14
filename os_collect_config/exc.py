@@ -34,12 +34,20 @@ class HeatMetadataNotAvailable(SourceNotAvailable):
     """The heat metadata service is not available."""
 
 
+class GcoreMetadataNotAvailable(SourceNotAvailable):
+    """The gcore metadata service is not available."""
+
+
 class CfnMetadataNotConfigured(SourceNotConfigured):
     """The cfn metadata service is not fully configured."""
 
 
 class HeatMetadataNotConfigured(SourceNotConfigured):
     """The heat metadata service is not fully configured."""
+
+
+class GcoreMetadataNotConfigured(SourceNotConfigured):
+    """The gcore metadata service is not fully configured."""
 
 
 class HeatLocalMetadataNotAvailable(SourceNotAvailable):
